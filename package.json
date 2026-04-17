@@ -1,0 +1,25 @@
+{
+  "name": "projeto-loterias",
+  "version": "1.0.0",
+  "description": "Projeto para análise e consulta de resultados das Loterias CAIXA",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "serve": "node src/server.js",
+    "fetch:all": "node src/scripts/fetchAllResults.js",
+    "fetch:latest": "node src/scripts/fetchLatest.js",
+    "sequencias:repetidas": "node src/scripts/sequenciasRepetidas.js",
+    "megasena:fetch:all": "node src/scripts/fetchAllResultsMegasena.js",
+    "megasena:fetch:latest": "node src/scripts/fetchLatestMegasena.js",
+    "megasena:sequencias:repetidas": "node src/scripts/sequenciasRepetidasMegasena.js",
+    "export:json": "node src/scripts/exportarSequenciasJson.js",
+    "export:json:megasena": "node src/scripts/exportarSequenciasJson.js megasena",
+    "export:json:lotofacil": "node src/scripts/exportarSequenciasJson.js lotofacil"
+  },
+  "dependencies": {
+    "axios": "^1.7.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

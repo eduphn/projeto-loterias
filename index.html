@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Loterias — Sequências Repetidas</title>
+  <style>
+    /* ===== RESET & BASE ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --clr-primary:       #1a6b2e;
+      --clr-primary-dk:    #134f22;
+      --clr-primary-lt:    #2a8a42;
+      --clr-accent:        #f5a623;
+      --clr-accent-dk:     #d4881a;
+      --clr-bg:            #f0f4f1;
+      --clr-surface:       #ffffff;
+      --clr-text:          #1e2422;
+      --clr-muted:         #6b7a72;
+      --clr-border:        #d0d8d3;
+      --clr-row-alt:       #f4f8f5;
+      --clr-row-hover:     #e5f0e8;
+      --shadow-s:  0 1px 3px rgba(0,0,0,.10);
+      --shadow-m:  0 4px 14px rgba(0,0,0,.14);
+      --radius:    8px;
+      --nav-h:     60px;
+      --max-w:     1200px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--clr-bg);
+      color: var(--clr-text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+    }
+
+    /* ===== HEADER / NAV ===== */
+    header {
+      background: var(--clr-primary);
+      position: sticky;
+      top: 0;
+      z-index: 900;
+      box-shadow: var(--shadow-m);
+    }
+
+    nav {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      height: var(--nav-h);
+      display: flex;
+      align-items: center;
+      padding: 0 1.5rem;
+      gap: 1.5rem;
+    }
+
+    .nav-brand {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: .4px;
+      color: #fff;
+      text-decoration: none;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+      flex-shrink: 0;
+    }
+
+    .nav-brand svg { width: 22px; height: 22px; fill: var(--clr-accent); flex-shrink: 0; }
+
+    /* ==== Menu list ==== */
+    .nav-menu {
+      list-style: none;
+      display: flex;
+      gap: .25rem;
+      align-items: center;
+    }
+
+    .nav-item { position: relative; }
+
+    .nav-btn {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,.88);
+      font-family: inherit;
+      font-size: .92rem;
+      font-weight: 500;
+      padding: .45rem 1rem;
+      border-radius: var(--radius);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      transition: background .18s, color .18s;
+      white-space: nowrap;
+    }
+    .nav-btn:hover,
+    .nav-item.open > .nav-btn { background: rgba(255,255,255,.16); color: #fff; }
+
+    .nav-btn .caret {
+      font-size: .65rem;
+      transition: transform .2s;
+    }
+    .nav-item.open > .nav-btn .caret { transform: rotate(180deg); }
+
+    /* ==== Dropdown ==== */
+    .dropdown {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-m);
+      min-width: 230px;
+      padding: .4rem 0;
+      display: none;
+      z-index: 901;
+    }
+    .nav-item.open > .dropdown { display: block; }
+
+    .dropdown-item {
+      display: block;
+      width: 100%;
+      background: none;
+      border: none;
+      text-align: left;
+      padding: .6rem 1.1rem;
+      font-family: inherit;
+      font-size: .88rem;
+      color: var(--clr-text);
+      cursor: pointer;
+      transition: background .14s;
+    }
+    .dropdown-item:hover              { background: var(--clr-row-alt); color: var(--clr-primary); }
+    .dropdown-item.active             { background: var(--clr-primary); color: #fff; font-weight: 600; }
+
+    .dropdown-label {
+      padding: .5rem 1.1rem .2rem;
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--clr-muted);
+    }
+
+    /* ==== Hamburger ==== */
+    .nav-toggle {
+      display: none;
+      background: none;
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      padding: .4rem;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+    .hamburger { display: flex; flex-direction: column; gap: 5px; pointer-events: none; }
+    .hamburger span {
+      display: block; width: 22px; height: 2px;
+      background: #fff; border-radius: 2px;
+      transition: all .28s;
+    }
+    .nav-toggle.open .hamburger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .nav-toggle.open .hamburger span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+    .nav-toggle.open .hamburger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* ===== MAIN ===== */
+    main {
+      flex: 1;
+      max-width: var(--max-w);
+      width: 100%;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    /* Welcome */
+    .welcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 420px;
+      text-align: center;
+      gap: .75rem;
+      color: var(--clr-muted);
+      padding: 2rem;
+    }
+    .welcome-icon { font-size: 3.5rem; }
+    .welcome h2   { font-size: 1.45rem; color: var(--clr-primary-dk); }
+    .welcome p    { max-width: 380px; font-size: .92rem; }
+
+    /* Loading */
+    .loading {
+      display: flex; align-items: center; justify-content: center;
+      gap: 1rem; padding: 4rem; color: var(--clr-muted);
+    }
+    .spinner {
+      width: 30px; height: 30px;
+      border: 3px solid var(--clr-border);
+      border-top-color: var(--clr-primary);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Error */
+    .error-msg {
+      background: #fef2f2; border: 1px solid #fecaca;
+      border-radius: var(--radius); padding: 1rem 1.25rem;
+      color: #b91c1c; font-size: .88rem;
+    }
+
+    /* Content header */
+    .content-header {
+      display: flex; align-items: flex-end;
+      justify-content: space-between; flex-wrap: wrap;
+      gap: .75rem; margin-bottom: 1.1rem;
+    }
+    .content-title {
+      font-size: 1.35rem; font-weight: 700;
+      color: var(--clr-primary-dk);
+    }
+    .content-meta { font-size: .8rem; color: var(--clr-muted); margin-top: .2rem; }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex; gap: .75rem; flex-wrap: wrap;
+      align-items: center; margin-bottom: 1rem;
+    }
+    .search-wrap {
+      position: relative; flex: 1;
+      min-width: 180px; max-width: 280px;
+    }
+    .search-wrap input {
+      width: 100%; padding: .48rem .75rem .48rem 2.1rem;
+      border: 1px solid var(--clr-border); border-radius: var(--radius);
+      font-family: inherit; font-size: .85rem; background: #fff;
+      transition: border-color .18s;
+    }
+    .search-wrap input:focus { outline: none; border-color: var(--clr-primary); }
+    .search-wrap .search-icon {
+      position: absolute; left: .6rem; top: 50%;
+      transform: translateY(-50%); color: var(--clr-muted);
+      pointer-events: none; font-size: .85rem;
+    }
+
+    /* ===== TABLE ===== */
+    .table-card {
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-s);
+      overflow: hidden;
+    }
+
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    table {
+      width: 100%; border-collapse: collapse;
+      font-size: .875rem;
+    }
+
+    thead tr { background: var(--clr-primary); color: #fff; }
+
+    th {
+      padding: .85rem 1rem; text-align: left;
+      font-size: .76rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .55px;
+      white-space: nowrap; cursor: pointer; user-select: none;
+      transition: background .15s;
+    }
+    th:hover          { background: var(--clr-primary-lt); }
+    th .sort-arrow    { margin-left: .3rem; opacity: .5; font-size: .7rem; }
+    th.asc  .sort-arrow::after { content: ' ↑'; opacity: 1; }
+    th.desc .sort-arrow::after { content: ' ↓'; opacity: 1; }
+
+    tbody tr { border-bottom: 1px solid var(--clr-border); transition: background .12s; }
+    tbody tr:last-child           { border-bottom: none; }
+    tbody tr:nth-child(even)      { background: var(--clr-row-alt); }
+    tbody tr:hover                { background: var(--clr-row-hover); }
+
+    td { padding: .7rem 1rem; vertical-align: middle; }
+
+    .col-rank    { width: 52px; font-size: .78rem; color: var(--clr-muted); font-weight: 600; }
+    .col-nums    {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: .86rem; font-weight: 700;
+      letter-spacing: 1px; color: var(--clr-primary-dk);
+      white-space: nowrap;
+    }
+    .col-count   { width: 110px; text-align: center; }
+    .col-contests{ color: var(--clr-muted); font-size: .8rem; }
+
+    .badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      background: var(--clr-accent); color: #1a1a1a;
+      font-size: .8rem; font-weight: 700;
+      padding: .18rem .6rem; border-radius: 999px; min-width: 2.4rem;
+    }
+
+    /* ===== PAGINATION ===== */
+    .pagination-bar {
+      display: flex; align-items: center;
+      justify-content: space-between; flex-wrap: wrap;
+      gap: .6rem; padding: .9rem 1rem;
+      border-top: 1px solid var(--clr-border);
+    }
+    .pagination-info { font-size: .78rem; color: var(--clr-muted); }
+    .pagination-ctrl { display: flex; gap: .25rem; flex-wrap: wrap; }
+
+    .pg-btn {
+      min-width: 34px; height: 34px; padding: 0 .5rem;
+      border: 1px solid var(--clr-border); background: #fff;
+      border-radius: 6px; cursor: pointer;
+      font-family: inherit; font-size: .82rem; color: var(--clr-text);
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: background .14s, border-color .14s, color .14s;
+    }
+    .pg-btn:hover:not(:disabled) {
+      background: var(--clr-primary); border-color: var(--clr-primary); color: #fff;
+    }
+    .pg-btn.cur {
+      background: var(--clr-primary); border-color: var(--clr-primary-dk);
+      color: #fff; font-weight: 700;
+    }
+    .pg-btn:disabled { opacity: .38; cursor: default; }
+
+    /* ===== FOOTER ===== */
+    footer {
+      background: var(--clr-primary-dk);
+      color: rgba(255,255,255,.72);
+      text-align: center;
+      padding: 1.6rem 1rem;
+      font-size: .8rem;
+      line-height: 1.7;
+    }
+    footer strong { color: #fff; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      :root { --nav-h: 56px; }
+
+      .nav-toggle { display: block; }
+
+      .nav-menu {
+        display: none;
+        flex-direction: column;
+        align-items: stretch;
+        position: absolute;
+        top: var(--nav-h);
+        left: 0; right: 0;
+        background: var(--clr-primary-dk);
+        padding: .5rem .75rem .75rem;
+        box-shadow: var(--shadow-m);
+        gap: .15rem;
+      }
+      .nav-menu.open { display: flex; }
+
+      .nav-btn {
+        padding: .75rem .9rem;
+        justify-content: space-between;
+        font-size: .96rem;
+        border-radius: 6px;
+      }
+
+      .dropdown {
+        position: static;
+        background: rgba(255,255,255,.07);
+        border: none; border-radius: 6px;
+        box-shadow: none;
+        padding: .25rem .4rem;
+        margin: .15rem 0;
+      }
+      .dropdown-item {
+        color: rgba(255,255,255,.82);
+        padding: .55rem .75rem;
+        border-radius: 4px;
+      }
+      .dropdown-item:hover  { background: rgba(255,255,255,.12); color: #fff; }
+      .dropdown-item.active { background: var(--clr-accent); color: #222; }
+      .dropdown-label       { color: rgba(255,255,255,.45); }
+
+      main { padding: 1.25rem 1rem; }
+      .content-header { flex-direction: column; }
+      th, td { padding: .6rem .8rem; }
+      .col-contests { display: none; }
+    }
+
+    @media (max-width: 480px) {
+      .col-rank { display: none; }
+      .pagination-ctrl { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header>
+  <nav>
+    <a class="nav-brand" href="#" aria-label="Início">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="11"/><circle cx="8"  cy="10" r="2" fill="#fff"/><circle cx="16" cy="10" r="2" fill="#fff"/><circle cx="12" cy="15" r="2" fill="#fff"/>
+      </svg>
+      Loterias
+    </a>
+
+    <button class="nav-toggle" id="navToggle" aria-label="Abrir menu" aria-expanded="false">
+      <span class="hamburger" aria-hidden="true">
+        <span></span><span></span><span></span>
+      </span>
+    </button>
+
+    <ul class="nav-menu" id="navMenu" role="menubar">
+
+      <li class="nav-item" role="none">
+        <button class="nav-btn" role="menuitem" aria-haspopup="true" aria-expanded="false">
+          Mega-Sena <span class="caret" aria-hidden="true">▾</span>
+        </button>
+        <div class="dropdown" role="menu">
+          <span class="dropdown-label">Sequências</span>
+          <button class="dropdown-item" role="menuitem" data-loteria="megasena" data-tamanho="5">5 números</button>
+          <button class="dropdown-item" role="menuitem" data-loteria="megasena" data-tamanho="6">6 números</button>
+        </div>
+      </li>
+
+      <li class="nav-item" role="none">
+        <button class="nav-btn" role="menuitem" aria-haspopup="true" aria-expanded="false">
+          Lotofácil <span class="caret" aria-hidden="true">▾</span>
+        </button>
+        <div class="dropdown" role="menu">
+          <span class="dropdown-label">Sequências</span>
+          <button class="dropdown-item" role="menuitem" data-loteria="lotofacil" data-tamanho="7">7 números</button>
+          <button class="dropdown-item" role="menuitem" data-loteria="lotofacil" data-tamanho="8">8 números</button>
+          <button class="dropdown-item" role="menuitem" data-loteria="lotofacil" data-tamanho="10">10 números</button>
+          <button class="dropdown-item" role="menuitem" data-loteria="lotofacil" data-tamanho="14">14 números</button>
+          <button class="dropdown-item" role="menuitem" data-loteria="lotofacil" data-tamanho="15">15 números</button>
+        </div>
+      </li>
+
+    </ul>
+  </nav>
+</header>
+
+<!-- ===== MAIN ===== -->
+<main id="main">
+  <div class="welcome" aria-live="polite">
+    <div class="welcome-icon" aria-hidden="true">🎱</div>
+    <h2>Painel de Sequências Repetidas</h2>
+    <p>Selecione uma loteria no menu acima para visualizar as combinações de números que mais se repetiram ao longo dos concursos.</p>
+  </div>
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <strong>Loterias CAIXA — Análise de Sequências Repetidas</strong><br>
+  Dados históricos obtidos via API não oficial do portal Loterias CAIXA.<br>
+  Este painel tem finalidade exclusivamente informativa e estatística.
+</footer>
+
+<!-- ===== JAVASCRIPT ===== -->
+<script>
+  'use strict';
+
+  // ─── Configuração das loterias e suas sequências disponíveis ───────────────
+  const LOTERIAS_CONFIG = {
+    megasena: {
+      nome:     'Mega-Sena',
+      dir:      'data/megasena',
+      tamanhos: [5, 6],
+    },
+    lotofacil: {
+      nome:     'Lotofácil',
+      dir:      'data/lotofacil',
+      tamanhos: [7, 8, 10, 14, 15],
+    },
+  };
+
+  const ROWS_PER_PAGE = 100;
+
+  // ─── Estado da aplicação ──────────────────────────────────────────────────
+  const state = {
+    rows:     [],      // dados brutos carregados
+    filtered: [],      // após filtro/ordenação
+    page:     1,
+    sortCol:  null,
+    sortDir:  'desc',
+    query:    '',
+  };
+
+  // ─── Elementos do DOM ─────────────────────────────────────────────────────
+  const mainEl     = document.getElementById('main');
+  const navToggle  = document.getElementById('navToggle');
+  const navMenu    = document.getElementById('navMenu');
+
+  // ─── Navegação: hamburger ─────────────────────────────────────────────────
+  navToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = navMenu.classList.toggle('open');
+    navToggle.classList.toggle('open', isOpen);
+    navToggle.setAttribute('aria-expanded', String(isOpen));
+  });
+
+  // ─── Dropdowns: abrir/fechar ao clicar no botão do menu ──────────────────
+  navMenu.querySelectorAll('.nav-item > .nav-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const item   = btn.closest('.nav-item');
+      const isOpen = item.classList.contains('open');
+      closeAllDropdowns();
+      if (!isOpen) {
+        item.classList.add('open');
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    });
+  });
+
+  // Fecha tudo ao clicar fora
+  document.addEventListener('click', closeAllDropdowns);
+
+  function closeAllDropdowns() {
+    navMenu.querySelectorAll('.nav-item').forEach((item) => {
+      item.classList.remove('open');
+      item.querySelector('.nav-btn').setAttribute('aria-expanded', 'false');
+    });
+    navMenu.classList.remove('open');
+    navToggle.classList.remove('open');
+    navToggle.setAttribute('aria-expanded', 'false');
+  }
+
+  // ─── Seleção de sequência ─────────────────────────────────────────────────
+  navMenu.querySelectorAll('.dropdown-item').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const loteria  = btn.dataset.loteria;
+      const tamanho  = parseInt(btn.dataset.tamanho, 10);
+
+      // Marca o item ativo
+      navMenu.querySelectorAll('.dropdown-item').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      closeAllDropdowns();
+      loadSequencia(loteria, tamanho);
+    });
+  });
+
+  // ─── Carregamento de dados ────────────────────────────────────────────────
+  async function loadSequencia(loteriaKey, tamanho) {
+    const cfg = LOTERIAS_CONFIG[loteriaKey];
+    const url = `${cfg.dir}/sequencia${tamanho}.json`;
+
+    // Exibe loading
+    mainEl.innerHTML = `
+      <div class="loading" aria-live="polite">
+        <div class="spinner" aria-hidden="true"></div>
+        <span>Carregando sequências de <strong>${tamanho} números</strong> da ${cfg.nome}…</span>
+      </div>`;
+
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status} — ${url}`);
+      const json = await resp.json();
+
+      state.rows     = Array.isArray(json.combinacoes) ? json.combinacoes : [];
+      state.filtered = [...state.rows];
+      state.page     = 1;
+      state.query    = '';
+      state.sortCol  = null;
+      state.sortDir  = 'desc';
+
+      renderPage(json);
+    } catch (err) {
+      mainEl.innerHTML = `
+        <div class="error-msg" role="alert">
+          <strong>Erro ao carregar os dados.</strong><br>
+          Verifique se o arquivo JSON foi gerado com
+          <code>npm run export:json</code>.<br>
+          <small style="opacity:.75">${err.message}</small>
+        </div>`;
+    }
+  }
+
+  // ─── Renderização do conteúdo principal ───────────────────────────────────
+  function renderPage(meta) {
+    const cfg  = LOTERIAS_CONFIG[Object.keys(LOTERIAS_CONFIG).find(k =>
+      LOTERIAS_CONFIG[k].nome === meta.loteria
+    ) || 'lotofacil'];
+
+    mainEl.innerHTML = `
+      <div class="content-header">
+        <div>
+          <h1 class="content-title">${meta.loteria} — Sequências de ${meta.tamanho} números</h1>
+          <p class="content-meta">
+            <strong>${(meta.total || state.rows.length).toLocaleString('pt-BR')}</strong> combinações encontradas
+            ${meta.geradoEm ? `· Gerado em <time>${meta.geradoEm}</time>` : ''}
+          </p>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-wrap">
+          <span class="search-icon" aria-hidden="true">🔍</span>
+          <input type="search" id="searchInput"
+            placeholder="Filtrar por combinação…"
+            aria-label="Filtrar combinações"
+            autocomplete="off"
+            value="">
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-scroll">
+          <table id="dataTable" role="grid" aria-label="Sequências repetidas">
+            <thead>
+              <tr>
+                <th class="col-rank"  data-col="rank"       scope="col">#<span class="sort-arrow" aria-hidden="true"></span></th>
+                <th                   data-col="numeros"     scope="col">Combinação<span class="sort-arrow" aria-hidden="true"></span></th>
+                <th class="col-count" data-col="repeticoes"  scope="col">Repetições<span class="sort-arrow" aria-hidden="true"></span></th>
+                <th class="col-contests" data-col="concursos" scope="col">Concursos<span class="sort-arrow" aria-hidden="true"></span></th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+        <div id="paginationBar"></div>
+      </div>`;
+
+    // Eventos — busca
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      state.query = e.target.value.trim();
+      state.page  = 1;
+      applyFilterSort();
+    });
+
+    // Eventos — ordenação por coluna
+    document.querySelectorAll('#dataTable th[data-col]').forEach((th) => {
+      th.addEventListener('click', () => {
+        const col = th.dataset.col;
+        if (col === 'rank') return; // rank não é ordenável isoladamente
+        if (state.sortCol === col) {
+          state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          state.sortCol = col;
+          state.sortDir = col === 'repeticoes' ? 'desc' : 'asc';
+        }
+        state.page = 1;
+        applyFilterSort();
+      });
+    });
+
+    renderRows();
+  }
+
+  // ─── Filtro + Ordenação ───────────────────────────────────────────────────
+  function applyFilterSort() {
+    let data = [...state.rows];
+
+    if (state.query) {
+      const q = state.query.toLowerCase();
+      data = data.filter((r) => r.numeros.toLowerCase().includes(q));
+    }
+
+    if (state.sortCol && state.sortCol !== 'rank') {
+      data.sort((a, b) => {
+        let va = a[state.sortCol];
+        let vb = b[state.sortCol];
+        if (state.sortCol === 'concursos') {
+          va = Array.isArray(va) ? va[0] : Number(va);
+          vb = Array.isArray(vb) ? vb[0] : Number(vb);
+        }
+        if (typeof va === 'number') {
+          return state.sortDir === 'asc' ? va - vb : vb - va;
+        }
+        return state.sortDir === 'asc'
+          ? String(va).localeCompare(String(vb), 'pt-BR')
+          : String(vb).localeCompare(String(va), 'pt-BR');
+      });
+    }
+
+    state.filtered = data;
+    renderRows();
+  }
+
+  // ─── Renderização das linhas da tabela ────────────────────────────────────
+  function renderRows() {
+    const tbody    = document.getElementById('tableBody');
+    const pagBar   = document.getElementById('paginationBar');
+    if (!tbody) return;
+
+    const total      = state.filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / ROWS_PER_PAGE));
+    state.page       = Math.min(state.page, totalPages);
+
+    const start = (state.page - 1) * ROWS_PER_PAGE;
+    const slice = state.filtered.slice(start, start + ROWS_PER_PAGE);
+
+    // Indicadores de ordenação
+    document.querySelectorAll('#dataTable th[data-col]').forEach((th) => {
+      th.classList.remove('asc', 'desc');
+      if (th.dataset.col === state.sortCol) {
+        th.classList.add(state.sortDir);
+      }
+    });
+
+    // Linhas
+    if (slice.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="4" style="text-align:center;padding:2.5rem;color:var(--clr-muted)">
+            Nenhuma combinação encontrada.
+          </td>
+        </tr>`;
+    } else {
+      tbody.innerHTML = slice.map((row, i) => {
+        const rank         = start + i + 1;
+        const concursosStr = formatConcursos(row.concursos);
+        return `
+          <tr>
+            <td class="col-rank">${rank}</td>
+            <td class="col-nums" title="${row.numeros}">${row.numeros}</td>
+            <td class="col-count"><span class="badge">${row.repeticoes}</span></td>
+            <td class="col-contests">${concursosStr}</td>
+          </tr>`;
+      }).join('');
+    }
+
+    // Paginação
+    const from = total === 0 ? 0 : start + 1;
+    const to   = Math.min(start + ROWS_PER_PAGE, total);
+    pagBar.innerHTML = `
+      <div class="pagination-bar">
+        <span class="pagination-info">
+          Exibindo <strong>${from}–${to}</strong> de
+          <strong>${total.toLocaleString('pt-BR')}</strong> combinações
+        </span>
+        <div class="pagination-ctrl" id="pgCtrl" role="navigation" aria-label="Paginação"></div>
+      </div>`;
+
+    buildPageControls(totalPages);
+  }
+
+  // ─── Controles de paginação ───────────────────────────────────────────────
+  function buildPageControls(totalPages) {
+    const ctrl = document.getElementById('pgCtrl');
+    if (!ctrl) return;
+
+    const cur  = state.page;
+    const show = new Set(
+      [1, totalPages, cur, cur - 1, cur + 1, cur - 2, cur + 2]
+        .filter((p) => p >= 1 && p <= totalPages)
+    );
+    const sorted = [...show].sort((a, b) => a - b);
+
+    const btns = [];
+    btns.push(btn('‹', cur - 1, cur === 1, 'Página anterior'));
+
+    let prev = null;
+    for (const p of sorted) {
+      if (prev !== null && p - prev > 1) {
+        btns.push(`<button class="pg-btn" disabled aria-hidden="true">…</button>`);
+      }
+      btns.push(btn(p, p, false, `Página ${p}`, p === cur));
+      prev = p;
+    }
+    btns.push(btn('›', cur + 1, cur === totalPages, 'Próxima página'));
+
+    ctrl.innerHTML = btns.join('');
+    ctrl.querySelectorAll('.pg-btn[data-p]').forEach((b) => {
+      b.addEventListener('click', () => {
+        state.page = parseInt(b.dataset.p, 10);
+        renderRows();
+        mainEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  }
+
+  function btn(label, page, disabled, ariaLabel, current = false) {
+    return `<button
+      class="pg-btn${current ? ' cur' : ''}"
+      data-p="${page}"
+      ${disabled ? 'disabled' : ''}
+      aria-label="${ariaLabel}"
+      ${current ? 'aria-current="page"' : ''}
+    >${label}</button>`;
+  }
+
+  // ─── Utilitários ──────────────────────────────────────────────────────────
+  function formatConcursos(concursos) {
+    if (!concursos) return '—';
+    const list = Array.isArray(concursos) ? concursos : String(concursos).split(',');
+    if (list.length <= 8) return list.join(', ');
+    return list.slice(0, 8).join(', ') + ` <span style="opacity:.65">…+${list.length - 8}</span>`;
+  }
+</script>
+</body>
+</html>
