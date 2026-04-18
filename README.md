@@ -12,6 +12,16 @@ Consulta e armazenamento de resultados das Loterias CAIXA via API não oficial.
 npm install
 ```
 
+## Painel Web
+
+Após gerar os dados (ver comandos abaixo), sirva o projeto com:
+
+```bash
+npm run serve
+```
+
+O painel em `index.html` exibe as sequências repetidas de ambas as loterias e permite **diagnosticar um jogo**: selecione 15 números e verifique se pelo menos 14 deles saíram juntos em algum sorteio da Lotofácil.
+
 ## Comandos
 
 ### Atualizar histórico completo
@@ -30,9 +40,9 @@ npm run fetch:all
 npm run fetch:latest
 ```
 
-### Sequências de 7 números que se repetiram
+### Sequências de números que se repetiram
 
-Percorre o histórico completo e lista todas as combinações de N números (dentro de um mesmo jogo de 15) que apareceram em mais de um concurso. Salva o resultado em `data/sequencias-repetidas-<tamanho>.txt`:
+Percorre o histórico completo e lista todas as combinações de N números (dentro de um mesmo jogo de 15) que apareceram em mais de um concurso. Salva em `data/sequencias-repetidas-<tamanho>.txt`:
 
 ```bash
 # Exemplo com 7 números
@@ -43,6 +53,21 @@ npm run sequencias:repetidas -- 10
 ```
 
 O tamanho deve ser um número entre 1 e 15.
+
+### Exportar sequências para JSON (painel web)
+
+Converte os arquivos `.txt` gerados acima para JSON consumido pelo painel:
+
+```bash
+# Lotofácil (todos os tamanhos)
+npm run export:json:lotofacil
+
+# Mega-Sena (todos os tamanhos)
+npm run export:json:megasena
+
+# Ambas as loterias
+npm run export:json
+```
 
 ## Mega-Sena
 
