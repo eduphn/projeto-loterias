@@ -1,6 +1,3 @@
 node_modules/
 
-# Arquivos de sequências gerados (podem ser regenerados com os scripts)
-data/lotofacil/sequencia7.json
-data/lotofacil/sequencia8.json
-data/lotofacil/sequencia10.json
+data/

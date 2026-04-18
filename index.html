@@ -397,6 +397,114 @@
       .col-rank { display: none; }
       .pagination-ctrl { justify-content: center; }
     }
+
+    /* ===== DIAGNÓSTICO ===== */
+    .diag-section { max-width: 380px; }
+
+    .num-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: .45rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .num-btn {
+      aspect-ratio: 1;
+      border: 2px solid var(--clr-border);
+      border-radius: 50%;
+      background: #fff;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--clr-text);
+      cursor: pointer;
+      transition: background .15s, border-color .15s, color .15s, transform .1s;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0;
+    }
+    .num-btn:hover:not(.sel):not(:disabled) {
+      border-color: var(--clr-primary);
+      background: var(--clr-row-alt);
+      color: var(--clr-primary);
+    }
+    .num-btn.sel {
+      background: var(--clr-primary);
+      border-color: var(--clr-primary-dk);
+      color: #fff;
+      transform: scale(1.1);
+    }
+    .num-btn:disabled:not(.sel) { opacity: .32; cursor: default; transform: none; }
+
+    .diag-counter {
+      font-size: .9rem;
+      color: var(--clr-muted);
+      margin-bottom: 1rem;
+    }
+    .diag-counter strong { color: var(--clr-primary-dk); }
+    .diag-counter.full strong { color: var(--clr-accent-dk); }
+
+    .diag-actions {
+      display: flex;
+      gap: .75rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      padding: .6rem 1.5rem;
+      background: var(--clr-primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: .95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .18s;
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--clr-primary-lt); }
+    .btn-primary:disabled { opacity: .4; cursor: default; }
+
+    .btn-secondary {
+      padding: .58rem 1.25rem;
+      background: transparent;
+      color: var(--clr-primary);
+      border: 1.5px solid var(--clr-primary);
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: .95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .18s, color .18s;
+    }
+    .btn-secondary:hover { background: var(--clr-primary); color: #fff; }
+
+    .diag-result {
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      font-size: .9rem;
+      line-height: 1.7;
+    }
+    .diag-result.found {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      color: #166534;
+    }
+    .diag-result.not-found {
+      background: #fff7ed;
+      border: 1px solid #fdba74;
+      color: #9a3412;
+    }
+    .diag-result .combo-display {
+      font-family: 'Courier New', Courier, monospace;
+      font-weight: 700;
+      font-size: .92rem;
+      letter-spacing: .5px;
+      word-break: break-all;
+      margin-top: .35rem;
+    }
+    .diag-result .concursos-list { margin-top: .5rem; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -441,6 +549,8 @@
           <button class="dropdown-item" role="menuitem" data-loteria="lotofacil" data-tamanho="10">10 números</button>
           <button class="dropdown-item" role="menuitem" data-loteria="lotofacil" data-tamanho="14">14 números</button>
           <button class="dropdown-item" role="menuitem" data-loteria="lotofacil" data-tamanho="15">15 números</button>
+          <span class="dropdown-label">Ferramentas</span>
+          <button class="dropdown-item" role="menuitem" data-action="diagnosticar">🔍 Diagnosticar</button>
         </div>
       </li>
 
@@ -534,18 +644,24 @@
     navToggle.setAttribute('aria-expanded', 'false');
   }
 
-  // ─── Seleção de sequência ─────────────────────────────────────────────────
+  // ─── Seleção de sequência / ações de navegação ──────────────────────────
   navMenu.querySelectorAll('.dropdown-item').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const loteria  = btn.dataset.loteria;
-      const tamanho  = parseInt(btn.dataset.tamanho, 10);
 
       // Marca o item ativo
       navMenu.querySelectorAll('.dropdown-item').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
 
       closeAllDropdowns();
+
+      if (btn.dataset.action === 'diagnosticar') {
+        loadDiagnostico();
+        return;
+      }
+
+      const loteria  = btn.dataset.loteria;
+      const tamanho  = parseInt(btn.dataset.tamanho, 10);
       loadSequencia(loteria, tamanho);
     });
   });
@@ -788,6 +904,149 @@
       aria-label="${ariaLabel}"
       ${current ? 'aria-current="page"' : ''}
     >${label}</button>`;
+  }
+
+  // ─── Diagnóstico de sequência ──────────────────────────────────────────────
+  let diagSelected   = new Set();
+  let diagResultados = null; // cache dos resultados brutos
+
+  function loadDiagnostico() {
+    diagSelected = new Set();
+
+    mainEl.innerHTML = `
+      <div class="content-header">
+        <div>
+          <h1 class="content-title">Diagnóstico de Sequência — Lotofácil</h1>
+          <p class="content-meta">
+            Selecione exatamente <strong>15 números</strong> e clique em <strong>Diagnosticar</strong>
+            para verificar se pelo menos <strong>14</strong> deles saíram juntos em algum sorteio.
+          </p>
+        </div>
+      </div>
+      <div class="diag-section">
+        <div class="num-grid" id="numGrid">
+          ${Array.from({ length: 25 }, (_, i) => {
+            const n     = i + 1;
+            const label = String(n).padStart(2, '0');
+            return `<button class="num-btn" data-n="${n}" aria-label="Número ${label}" aria-pressed="false">${label}</button>`;
+          }).join('')}
+        </div>
+        <p class="diag-counter" id="diagCounter">
+          <strong id="diagCount">0</strong> de 15 selecionados
+        </p>
+        <div class="diag-actions">
+          <button class="btn-primary" id="btnDiag" disabled>🔍 Diagnosticar</button>
+          <button class="btn-secondary" id="btnClear">Limpar</button>
+        </div>
+        <div id="diagResult"></div>
+      </div>`;
+
+    document.getElementById('numGrid').addEventListener('click', (e) => {
+      const btn = e.target.closest('.num-btn');
+      if (!btn || btn.disabled) return;
+      const n = parseInt(btn.dataset.n, 10);
+      if (diagSelected.has(n)) {
+        diagSelected.delete(n);
+      } else {
+        if (diagSelected.size >= 15) return;
+        diagSelected.add(n);
+      }
+      updateDiagUI();
+    });
+
+    document.getElementById('btnClear').addEventListener('click', () => {
+      diagSelected.clear();
+      document.getElementById('diagResult').innerHTML = '';
+      updateDiagUI();
+    });
+
+    document.getElementById('btnDiag').addEventListener('click', runDiagnostico);
+  }
+
+  function updateDiagUI() {
+    const count      = diagSelected.size;
+    const counterEl  = document.getElementById('diagCounter');
+    const countEl    = document.getElementById('diagCount');
+    const btnDiag    = document.getElementById('btnDiag');
+    if (!countEl) return;
+
+    countEl.textContent = count;
+    counterEl.classList.toggle('full', count === 15);
+    btnDiag.disabled = count !== 15;
+
+    document.querySelectorAll('.num-btn').forEach((btn) => {
+      const n     = parseInt(btn.dataset.n, 10);
+      const isSel = diagSelected.has(n);
+      btn.classList.toggle('sel', isSel);
+      btn.setAttribute('aria-pressed', String(isSel));
+      btn.disabled = !isSel && count >= 15;
+    });
+  }
+
+  async function runDiagnostico() {
+    const btnDiag  = document.getElementById('btnDiag');
+    const resultEl = document.getElementById('diagResult');
+    btnDiag.disabled = true;
+    resultEl.innerHTML = `
+      <div class="loading" style="padding:1.5rem 0">
+        <div class="spinner" aria-hidden="true"></div>
+        <span>Verificando…</span>
+      </div>`;
+
+    try {
+      if (!diagResultados) {
+        const resp = await fetch('data/lotofacil-resultados.json');
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        diagResultados = await resp.json();
+      }
+
+      const selected = [...diagSelected].sort((a, b) => a - b);
+      const comboStr = selected.map((n) => String(n).padStart(2, '0')).join('-');
+
+      const matches = [];
+      for (const draw of diagResultados) {
+        const dezenas = new Set(draw.listaDezenas.map(Number));
+        const acertos = selected.filter((n) => dezenas.has(n)).length;
+        if (acertos >= 14) {
+          matches.push({ numero: draw.numero, acertos });
+        }
+      }
+
+      if (matches.length > 0) {
+        const linhas = matches.map((m) =>
+          `${m.numero} (${m.acertos} acertos)`
+        ).join(', ');
+        resultEl.innerHTML = `
+          <div class="diag-result found" role="status">
+            <p>✅ <strong>Pelo menos 14 acertos encontrados!</strong></p>
+            <p class="combo-display">${comboStr}</p>
+            <p class="concursos-list">
+              Encontrado em <strong>${matches.length}</strong> concurso${matches.length > 1 ? 's' : ''}:
+              ${linhas}
+            </p>
+          </div>`;
+      } else {
+        resultEl.innerHTML = `
+          <div class="diag-result not-found" role="status">
+            <p>❌ <strong>Nenhum sorteio com 14 ou mais acertos.</strong></p>
+            <p class="combo-display">${comboStr}</p>
+            <p style="margin-top:.4rem">
+              Estes 15 números nunca tiveram 14 ou mais presentes no mesmo sorteio entre os
+              <strong>${diagResultados.length.toLocaleString('pt-BR')}</strong> concursos da Lotofácil.
+            </p>
+          </div>`;
+      }
+    } catch (err) {
+      resultEl.innerHTML = `
+        <div class="error-msg" role="alert">
+          <strong>Erro ao verificar.</strong><br>
+          <small>${err.message}</small>
+        </div>`;
+    } finally {
+      if (document.getElementById('btnDiag')) {
+        document.getElementById('btnDiag').disabled = diagSelected.size !== 15;
+      }
+    }
   }
 
   // ─── Utilitários ──────────────────────────────────────────────────────────
