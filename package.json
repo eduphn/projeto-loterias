@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node src/index.js",
     "serve": "node src/server.js",
+    "build": "npm run fetch:all && npm run megasena:fetch:all && npm run export:json:lotofacil && npm run export:json:megasena",
     "fetch:all": "node src/scripts/fetchAllResults.js",
     "fetch:latest": "node src/scripts/fetchLatest.js",
     "sequencias:repetidas": "node src/scripts/sequenciasRepetidas.js",

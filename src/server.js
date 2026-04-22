@@ -7,6 +7,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const { exec } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 const PORT = process.env.PORT || 3000;
@@ -31,7 +32,8 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  const filePath = path.join(ROOT, normalized === '/' ? 'index.html' : normalized);
+  const isRoot = normalized === '/' || normalized === path.sep;
+  const filePath = path.join(ROOT, isRoot ? 'index.html' : normalized);
 
   // Garante que o caminho final está dentro de ROOT
   if (!filePath.startsWith(ROOT + path.sep) && filePath !== ROOT) {
@@ -54,6 +56,12 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
+  const url = `http://localhost:${PORT}`;
+  console.log(`Servidor rodando em ${url}`);
   console.log('Pressione Ctrl+C para parar.');
+
+  const cmd = process.platform === 'win32' ? `start ${url}`
+            : process.platform === 'darwin' ? `open ${url}`
+            : `xdg-open ${url}`;
+  exec(cmd);
 });
