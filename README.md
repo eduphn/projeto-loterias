@@ -24,15 +24,15 @@ O painel em `index.html` exibe as sequências repetidas de ambas as loterias e p
 
 ## Comandos
 
-### Atualizar histórico completo
+### Atualizar histórico
 
-Baixa todos os concursos da Lotofácil e salva em `data/lotofacil-resultados.json`:
+Atualiza `data/lotofacil-resultados.json`: se o arquivo já existir, verifica quais concursos estão ausentes e baixa somente esses até o último disponível. Se o arquivo ainda não existir, baixa o histórico desde o concurso 1.
 
 ```bash
 npm run fetch:all
 ```
 
-> Execute periodicamente para manter o arquivo atualizado com os novos concursos.
+> Execute periodicamente para incrementar o arquivo com os novos concursos sem baixar tudo de novo.
 
 ### Ver último resultado
 

@@ -1,29 +1,58 @@
 const fs = require('fs');
 const path = require('path');
-const { fetchAll } = require('../services/lotofacil');
+const { fetchUpdates } = require('../services/lotofacil');
 
 const OUTPUT_FILE = path.resolve(__dirname, '../../data/lotofacil-resultados.json');
 
-async function main() {
-  console.log('Iniciando download de todos os resultados da Lotofácil...');
-  console.log('Isso pode levar alguns minutos.\n');
+function readExistingResults() {
+  if (!fs.existsSync(OUTPUT_FILE)) {
+    return [];
+  }
 
-  const resultados = await fetchAll({
+  const fileContent = fs.readFileSync(OUTPUT_FILE, 'utf-8');
+  if (!fileContent.trim()) {
+    return [];
+  }
+
+  const data = JSON.parse(fileContent);
+  if (!Array.isArray(data)) {
+    throw new Error(`Arquivo inválido: ${OUTPUT_FILE} não contém uma lista de resultados.`);
+  }
+
+  return data;
+}
+
+async function main() {
+  console.log('Atualizando resultados da Lotofácil...');
+
+  const existentes = readExistingResults();
+  console.log(`Concursos já salvos: ${existentes.length}`);
+
+  const atualizacao = await fetchUpdates(existentes, {
     batchSize: 30,
-    onProgress: ({ fetched, total }) => {
-      const pct = ((fetched / total) * 100).toFixed(1);
-      process.stdout.write(`\rProgresso: ${fetched}/${total} concursos (${pct}%)`);
+    onProgress: ({ fetched, checked, total }) => {
+      const pct = ((checked / total) * 100).toFixed(1);
+      process.stdout.write(`\rBaixando concursos ausentes: ${checked}/${total} verificados, ${fetched} encontrados (${pct}%)`);
     },
   });
 
-  console.log(`\n\nTotal de concursos baixados: ${resultados.length}`);
+  console.log(`\nÚltimo concurso salvo localmente: ${atualizacao.lastLocal || 'nenhum'}`);
+  console.log(`Último concurso disponível na API: ${atualizacao.latest.numero}`);
+  console.log(`Concursos ausentes antes da atualização: ${atualizacao.missingNumbers.length}`);
+
+  if (atualizacao.added.length === 0) {
+    console.log('Nenhum concurso novo para baixar.');
+  } else {
+    console.log(`Concursos baixados e adicionados: ${atualizacao.added.length}`);
+  }
 
   const dir = path.dirname(OUTPUT_FILE);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 
-  fs.writeFileSync(OUTPUT_FILE, JSON.stringify(resultados, null, 2), 'utf-8');
+  fs.writeFileSync(OUTPUT_FILE, JSON.stringify(atualizacao.results, null, 2), 'utf-8');
+  console.log(`Total de concursos no arquivo: ${atualizacao.results.length}`);
   console.log(`Resultados salvos em: ${OUTPUT_FILE}`);
 }
 
